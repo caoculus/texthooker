@@ -1,17 +1,22 @@
-import { createSignal, For, Show, type Component } from 'solid-js';
+import { createSignal, For, Show, type Component } from "solid-js";
 
-import styles from './App.module.css';
+import styles from "./App.module.css";
 
-import { createStore } from 'solid-js/store';
-import { State, StateWrapper, UpdateType } from './State';
+import { createStore } from "solid-js/store";
+import { State, StateWrapper, UpdateType } from "./State";
 
 type EntryProps = {
-    label: string,
-    content: string,
-    removeEntry: () => void,
-    setContent: (content: string) => void,
+    label: string;
+    content: string;
+    removeEntry: () => void;
+    setContent: (content: string) => void;
 };
-const Entry: Component<EntryProps> = ({ label, content, removeEntry, setContent }: EntryProps) => {
+const Entry: Component<EntryProps> = ({
+    label,
+    content,
+    removeEntry,
+    setContent,
+}: EntryProps) => {
     let boxRef: HTMLDivElement;
     let contentRef: HTMLSpanElement;
     const [focused, setFocused] = createSignal(false);
@@ -29,28 +34,45 @@ const Entry: Component<EntryProps> = ({ label, content, removeEntry, setContent 
         setContent(label);
     };
     const contentVisible = () => {
-        return focused() || label == content;
+        return focused() || label != content;
     };
 
     return (
-        <div ref={boxRef!} class={styles.line_box}>
+        <div
+            ref={boxRef!}
+            class={styles.line_box}
+        >
             <span class={styles.line_label}>{label}</span>
-            <div class={styles.line_button} onClick={onEdit}>
+            <div
+                class={styles.line_button}
+                onClick={onEdit}
+            >
                 🖉
             </div>
-            <div class={styles.line_button} onClick={removeEntry}>
+            <div
+                class={styles.line_button}
+                onClick={removeEntry}
+            >
                 ×
             </div>
             <br />
-            <Show when={contentVisible}>
-                <span ref={contentRef!} class={styles.line_content} onFocusOut={onFocusOut} onClick={onEdit}>
+            <Show when={contentVisible()}>
+                <span
+                    ref={contentRef!}
+                    class={styles.line_content}
+                    onFocusOut={onFocusOut}
+                    onClick={onEdit}
+                >
                     {content}
                 </span>
-                <div class={styles.line_button} onClick={revertContent}>
+                <div
+                    class={styles.line_button}
+                    onClick={revertContent}
+                >
                     ↶
                 </div>
             </Show>
-        </div >
+        </div>
     );
 };
 
@@ -68,7 +90,12 @@ const App: Component = () => {
     const wrapper = new StateWrapper(state, setState);
     wrapper.setupObserver();
 
-    for (const key of ["entries", "fontSize", "undoStack", "redoStack"] as const) {
+    for (const key of [
+        "entries",
+        "fontSize",
+        "undoStack",
+        "redoStack",
+    ] as const) {
         wrapper.registerLocalStorage(key);
     }
 
@@ -78,7 +105,10 @@ const App: Component = () => {
     }
 
     const handleFontSize = (e: InputEvent) => {
-        setState("fontSize", Number.parseInt((e.target! as HTMLInputElement).value))
+        setState(
+            "fontSize",
+            Number.parseInt((e.target! as HTMLInputElement).value),
+        );
     };
     const undo = () => {
         wrapper.updateWithStack("undoStack", "redoStack");
@@ -108,46 +138,78 @@ const App: Component = () => {
         <>
             <div style={`font-size: ${state.fontSize}px`}>
                 <div class={styles.container}>
-                    <div class={styles.container_button} id="clear_button" title="Clear localStorage" onClick={() => wrapper.clearEntries()}>
+                    <div
+                        class={styles.container_button}
+                        id="clear_button"
+                        title="Clear localStorage"
+                        onClick={() => wrapper.clearEntries()}
+                    >
                         <i class="nf nf-md-delete"></i>
                     </div>
-                    <div class={`${styles.container_button} ${state.redoStack.length === 0 ? styles.disabled_button : ""}`} title="Redo last action" onClick={redo}>
+                    <div
+                        class={`${styles.container_button} ${state.redoStack.length === 0 ? styles.disabled_button : ""}`}
+                        title="Redo last action"
+                        onClick={redo}
+                    >
                         <i class="nf nf-md-redo"></i>
                     </div>
-                    <div class={`${styles.container_button} ${state.undoStack.length === 0 ? styles.disabled_button : ""}`} title="Undo last action" onClick={undo}>
+                    <div
+                        class={`${styles.container_button} ${state.undoStack.length === 0 ? styles.disabled_button : ""}`}
+                        title="Undo last action"
+                        onClick={undo}
+                    >
                         <i class="nf nf-md-undo"></i>
                     </div>
-                    <div class={`${styles.container_button} ${state.selected.idxs.length <= 1 ? styles.disabled_button : ""}`} title="Undo last action" onClick={distribute}>
+                    <div
+                        class={`${styles.container_button} ${state.selected.idxs.length <= 1 ? styles.disabled_button : ""}`}
+                        title="Undo last action"
+                        onClick={distribute}
+                    >
                         <i class="nf nf-md-call_split"></i>
                     </div>
-                    <div class={styles.container_button} title="Download as JSON" onClick={downloadJson}>
+                    <div
+                        class={styles.container_button}
+                        title="Download as JSON"
+                        onClick={downloadJson}
+                    >
                         <i class="nf nf-md-download"></i>
                     </div>
-                    <div id={styles.counter} title="No. of lines">
+                    <div
+                        id={styles.counter}
+                        title="No. of lines"
+                    >
                         {state.entries.length}
                     </div>
-                    <div id={styles.settings}>
-                        <div>
-                            <label for="font-size-input">Font Size</label>
-                            <input
-                                id="font-size-input"
-                                type="number"
-                                min="0"
-                                onInput={handleFontSize}
-                                value={state.fontSize}
-                            />
-                        </div>
+                </div>
+                <div id={styles.settings}>
+                    <div>
+                        <label for="font-size-input">Font Size</label>
+                        <input
+                            id="font-size-input"
+                            type="number"
+                            min="0"
+                            onInput={handleFontSize}
+                            value={state.fontSize}
+                        />
                     </div>
-                    <div id="lines">
-                        <For each={state.entries}>{(entry, idx) => {
-                            return <Entry
-                                label={entry.label}
-                                content={entry.content}
-                                removeEntry={() => wrapper.removeEntry(idx())}
-                                setContent={(newContent) => wrapper.editContent(idx(), newContent)}
-                            />
-                        }}</For>
-                    </div>
+                </div>
+                <div id="lines">
+                    <For each={state.entries}>
+                        {(entry, idx) => {
+                            return (
+                                <Entry
+                                    label={entry.label}
+                                    content={entry.content}
+                                    removeEntry={() =>
+                                        wrapper.removeEntry(idx())
+                                    }
+                                    setContent={(newContent) =>
+                                        wrapper.editContent(idx(), newContent)
+                                    }
+                                />
+                            );
+                        }}
+                    </For>
                 </div>
             </div>
         </>

@@ -14,3 +14,13 @@ lspconfig.tsserver.setup({
     },
 })
 lspconfig.cssls.setup({})
+lspconfig.eslint.setup({})
+
+local conform = require("conform")
+conform.setup({
+    formatters_by_ft = {
+        typescriptreact = {
+            "prettier",
+        }
+    }
+})
