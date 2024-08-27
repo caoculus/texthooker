@@ -15,7 +15,10 @@
       };
     in {
       devShells.default = pkgs.mkShell {
-        buildInputs = [];
+        buildInputs = with pkgs; [
+          nodePackages.typescript-language-server
+          vscode-langservers-extracted
+        ];
       };
     });
 }
