@@ -1,8 +1,5 @@
+import { createEffect } from "solid-js";
 import { produce, SetStoreFunction } from "solid-js/store";
-import { Dictionary } from "typescript-collections";
-
-type Id = number;
-type FontSize = number;
 
 type TextEntry = {
     label: string,
@@ -10,16 +7,14 @@ type TextEntry = {
 };
 
 type Edit = {
-    id: Id,
+    idx: number,
     newContent: string,
 };
 
 type Selected = {
     text: string,
-    ids: Id[],
+    idxs: number[],
 };
-
-type EntryMap = Dictionary<Id, TextEntry>;
 
 export enum UpdateType {
     Add = "add",
@@ -30,19 +25,18 @@ export enum UpdateType {
 }
 
 type Update =
-    | { type: UpdateType.Add, id: Id, entry: TextEntry }
-    | { type: UpdateType.Remove, id: Id }
+    | { type: UpdateType.Add, idx: number, entry: TextEntry }
+    | { type: UpdateType.Remove, idx: number }
     | { type: UpdateType.Edit, edit: Edit }
     | { type: UpdateType.Distribute, edits: Edit[] }
-    | { type: UpdateType.Clear, entries: EntryMap };
+    | { type: UpdateType.Clear, entries: TextEntry[] };
 
 export type State = {
-    entries: EntryMap,
-    fontSize: FontSize,
+    entries: TextEntry[],
+    fontSize: number,
     undoStack: Update[],
     redoStack: Update[],
     selected: Selected,
-    nextId: Id,
 };
 
 type StackName = "undoStack" | "redoStack";
@@ -56,13 +50,14 @@ export class StateWrapper {
         this.setState = setState;
     }
 
-    normalizeState(): void {
-        const { state, setState } = this;
-        const newEntries: EntryMap = new Dictionary();
-        for (const [id, entry] of state.entries.values().entries()) {
-            newEntries.setValue(id, entry);
+    registerLocalStorage<K extends keyof State>(key: K) {
+        const value = localStorage.getItem(key);
+        if (value !== null) {
+            this.setState(key, JSON.parse(value));
         }
-        setState("entries", newEntries);
+        createEffect(() => {
+            localStorage.setItem(key, JSON.stringify(this.state[key]))
+        })
     }
 
     setupObserver(): void {
@@ -91,42 +86,35 @@ export class StateWrapper {
     }
 
     applyEdit(edit: Edit): Edit {
-        let { id, newContent } = edit;
+        let { idx, newContent } = edit;
         let oldContent!: string;
         this.setState("entries", produce((entries) => {
-            const entry = entries.getValue(id);
-            if (entry === undefined) {
-                throw new Error(`Couldn't find entry for id ${id}`);
-            }
+            const entry = entries[idx]
             oldContent = entry.content;
-            entries.setValue(id, { ...entry, content: newContent });
+            entries[idx] = { ...entry, content: newContent };
         }));
-        return { id, newContent: oldContent };
+        return { idx, newContent: oldContent };
     }
 
     updateAndGetReverse(update: Update): Update {
-        console.log("update");
         const { state, setState } = this;
         switch (update.type) {
             case UpdateType.Add: {
-                const { id, entry } = update;
-                setState("entries", (entries) => {
-                    entries.setValue(id, entry);
-                    return entries;
-                });
-                return { type: UpdateType.Remove, id };
+                const { idx, entry } = update;
+                setState("entries", produce((entries) => {
+                    if (idx === undefined) { }
+                    entries.push(entry);
+                }));
+                return { type: UpdateType.Remove, idx: state.entries.length - 1 };
             }
             case UpdateType.Remove: {
-                const { id } = update;
+                const { idx } = update;
                 let entry: TextEntry;
                 setState("entries", produce((entries) => {
-                    const removed = entries.remove(id);
-                    if (removed === undefined) {
-                        throw new Error(`Couldn't find entry for id ${id}`);
-                    }
-                    entry = removed;
+                    entry = entries[idx];
+                    entries.splice(idx, 1);
                 }));
-                return { type: UpdateType.Add, id, entry: entry! };
+                return { type: UpdateType.Add, idx, entry: entry! };
             }
             case UpdateType.Edit: {
                 const { edit } = update;
@@ -157,31 +145,26 @@ export class StateWrapper {
     }
 
     addEntry(entry: TextEntry): void {
-        const { state, setState } = this;
-        const id = state.nextId;
-        setState("nextId", id + 1);
-        this.updateAndPushUndo({ type: UpdateType.Add, id, entry });
+        const { state } = this;
+        this.updateAndPushUndo({ type: UpdateType.Add, idx: state.entries.length, entry });
         // scroll page to bottom
         window.scrollTo(0, document.body.scrollHeight);
     }
 
-    removeEntry(id: Id): void {
-        this.updateAndPushUndo({ type: UpdateType.Remove, id });
+    removeEntry(idx: number): void {
+        this.updateAndPushUndo({ type: UpdateType.Remove, idx });
     }
 
     clearEntries(): void {
-        if (!this.state.entries.isEmpty()) {
-            this.updateAndPushUndo({ type: UpdateType.Clear, entries: new Dictionary() });
+        if (this.state.entries.length > 0) {
+            this.updateAndPushUndo({ type: UpdateType.Clear, entries: [] });
         }
     }
 
-    editContent(id: Id, newContent: string): void {
-        const entry = this.state.entries.getValue(id);
-        if (entry === undefined) {
-            throw new Error(`Couldn't find entry for id ${id}`);
-        }
+    editContent(idx: number, newContent: string): void {
+        const entry = this.state.entries[idx];
         if (entry.content !== newContent) {
-            this.updateAndPushUndo({ type: UpdateType.Edit, edit: { id, newContent: newContent } });
+            this.updateAndPushUndo({ type: UpdateType.Edit, edit: { idx, newContent: newContent } });
         }
     }
 
@@ -204,8 +187,8 @@ export class StateWrapper {
             return s.length > 0 ? `（${s}）` : s;
         }
 
-        const labels = this.state.entries.values().map((entry) => entry.label);
-        return this.state.selected.ids.map((id, i) => {
+        const labels = this.state.entries.map((entry) => entry.label);
+        return this.state.selected.idxs.map((idx, i) => {
             const parts: string[] = [];
             const before = joinParenthesized(labels.slice(0, i));
             const after = joinParenthesized(labels.slice(i + 1));
@@ -217,7 +200,7 @@ export class StateWrapper {
                 parts.push(after);
             }
             const newContent = parts.join("\n");
-            return { id, newContent };
+            return { idx, newContent };
         })
     }
 
@@ -234,11 +217,11 @@ export class StateWrapper {
         if (lines === null) {
             throw new Error("Could not find lines element");
         }
-        const selectedIds = this.state.entries.keys().filter((_id, i) => {
-            const lineBox = lines.children[i];
+        const selectedIdxs = [...this.state.entries.keys()].filter((idx) => {
+            const lineBox = lines.children[idx];
             return selection.containsNode(lineBox, true);
         });
-        return { text: selectedText, ids: selectedIds };
+        return { text: selectedText, idxs: selectedIdxs };
     };
 }
 

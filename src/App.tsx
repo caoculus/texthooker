@@ -1,24 +1,13 @@
-import { createEffect, createSignal, For, Show, type Component } from 'solid-js';
+import { createSignal, For, Show, type Component } from 'solid-js';
 
 import styles from './App.module.css';
 
-import { Dictionary } from "typescript-collections";
-import { createMutable, createStore } from 'solid-js/store';
+import { createStore } from 'solid-js/store';
 import { State, StateWrapper, UpdateType } from './State';
-
-function registerLocalStorage<T>(name: string, get: () => T, set: (value: string) => void): void {
-    const value = localStorage.getItem(name);
-    if (value !== null) {
-        set(value);
-    }
-    createEffect(() => {
-        localStorage.setItem(name, JSON.stringify(get()))
-    })
-}
 
 type EntryProps = {
     label: string,
-    content: () => string,
+    content: string,
     removeEntry: () => void,
     setContent: (content: string) => void,
 };
@@ -40,7 +29,7 @@ const Entry: Component<EntryProps> = ({ label, content, removeEntry, setContent 
         setContent(label);
     };
     const contentVisible = () => {
-        return focused() || label == content();
+        return focused() || label == content;
     };
 
     return (
@@ -55,7 +44,7 @@ const Entry: Component<EntryProps> = ({ label, content, removeEntry, setContent 
             <br />
             <Show when={contentVisible}>
                 <span ref={contentRef!} class={styles.line_content} onFocusOut={onFocusOut} onClick={onEdit}>
-                    {content()}
+                    {content}
                 </span>
                 <div class={styles.line_button} onClick={revertContent}>
                     ↶
@@ -65,27 +54,28 @@ const Entry: Component<EntryProps> = ({ label, content, removeEntry, setContent 
     );
 };
 
+const MAX_UNDO: number = 1000;
+
 const App: Component = () => {
     const [state, setState] = createStore<State>({
-        entries: createMutable(new Dictionary()),
+        entries: [],
         fontSize: 26,
         undoStack: [],
         redoStack: [],
-        selected: { text: "", ids: [] },
-        nextId: 0,
+        selected: { text: "", idxs: [] },
     });
-
-    registerLocalStorage("entries", () => state.entries, (s) => {
-        const obj = JSON.parse(s);
-        setState("entries", Object.create(Dictionary.prototype, Object.getOwnPropertyDescriptors(obj)));
-    });
-    registerLocalStorage("fontSize", () => state.fontSize, (s) => {
-        setState("fontSize", JSON.parse(s));
-    })
 
     const wrapper = new StateWrapper(state, setState);
-    wrapper.normalizeState();
     wrapper.setupObserver();
+
+    for (const key of ["entries", "fontSize", "undoStack", "redoStack"] as const) {
+        wrapper.registerLocalStorage(key);
+    }
+
+    // Trim if too long
+    if (state.undoStack.length > MAX_UNDO) {
+        setState("undoStack", (stack) => stack.slice(stack.length - MAX_UNDO));
+    }
 
     const handleFontSize = (e: InputEvent) => {
         setState("fontSize", Number.parseInt((e.target! as HTMLInputElement).value))
@@ -97,7 +87,7 @@ const App: Component = () => {
         wrapper.updateWithStack("redoStack", "undoStack");
     };
     const downloadJson = () => {
-        const entries = state.entries.values().map((entry) => JSON.stringify(entry));
+        const entries = state.entries.map((entry) => JSON.stringify(entry));
         const blob = new Blob(entries);
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -111,7 +101,7 @@ const App: Component = () => {
         }
     };
     document.addEventListener("selectionchange", () => {
-        setState("selected", wrapper.calcSelection() ?? { text: "", ids: [] });
+        setState("selected", wrapper.calcSelection() ?? { text: "", idxs: [] });
     });
 
     return (
@@ -127,14 +117,14 @@ const App: Component = () => {
                     <div class={`${styles.container_button} ${state.undoStack.length === 0 ? styles.disabled_button : ""}`} title="Undo last action" onClick={undo}>
                         <i class="nf nf-md-undo"></i>
                     </div>
-                    <div class={`${styles.container_button} ${state.selected.ids.length <= 1 ? styles.disabled_button : ""}`} title="Undo last action" onClick={distribute}>
+                    <div class={`${styles.container_button} ${state.selected.idxs.length <= 1 ? styles.disabled_button : ""}`} title="Undo last action" onClick={distribute}>
                         <i class="nf nf-md-call_split"></i>
                     </div>
                     <div class={styles.container_button} title="Download as JSON" onClick={downloadJson}>
                         <i class="nf nf-md-download"></i>
                     </div>
                     <div id={styles.counter} title="No. of lines">
-                        {state.entries.size()}
+                        {state.entries.length}
                     </div>
                     <div id={styles.settings}>
                         <div>
@@ -149,14 +139,13 @@ const App: Component = () => {
                         </div>
                     </div>
                     <div id="lines">
-                        <For each={state.entries.keys()}>{(id) => {
-                            console.log("For component");
-                            const label = state.entries.getValue(id)!.label;
-                            const content = () => state.entries.getValue(id)!.content;
-                            return <Entry label={label} content={content} removeEntry={() => wrapper.removeEntry(id)} setContent={(newContent) => setState("entries", (entries) => {
-                                entries.getValue(id)!.content = newContent;
-                                return { ...entries };
-                            })} />
+                        <For each={state.entries}>{(entry, idx) => {
+                            return <Entry
+                                label={entry.label}
+                                content={entry.content}
+                                removeEntry={() => wrapper.removeEntry(idx())}
+                                setContent={(newContent) => wrapper.editContent(idx(), newContent)}
+                            />
                         }}</For>
                     </div>
                 </div>
