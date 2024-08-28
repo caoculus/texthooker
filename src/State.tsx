@@ -240,7 +240,7 @@ export class StateWrapper {
             return null;
         }
         const selectedText = selection.toString();
-        const lines = document.getElementById("lines");
+        const lines = document.getElementById(styles.lines);
         if (lines === null) {
             throw new Error("Could not find lines element");
         }

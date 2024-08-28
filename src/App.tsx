@@ -191,7 +191,7 @@ const App: Component = () => {
                         />
                     </div>
                 </div>
-                <div id="lines">
+                <div id={styles.lines}>
                     <For each={state.entries}>
                         {(entry, idx) => {
                             return (
