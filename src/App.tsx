@@ -138,7 +138,7 @@ const App: Component = () => {
                 <div class={styles.container}>
                     <div
                         class={styles.container_button}
-                        id="clear_button"
+                        id={styles.clear_button}
                         title="Clear localStorage"
                         onClick={() => wrapper.clearEntries()}
                     >
@@ -181,9 +181,9 @@ const App: Component = () => {
                 </div>
                 <div id={styles.settings}>
                     <div>
-                        <label for="font-size-input">Font Size</label>
+                        <label for={styles["font-size-input"]}>Font Size</label>
                         <input
-                            id="font-size-input"
+                            id={styles["font-size-input"]}
                             type="number"
                             min="0"
                             onInput={handleFontSize}
