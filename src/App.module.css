@@ -13,7 +13,7 @@ body {
 
 .container {
     position: fixed;
-    top: 3px;
+    top: 5px;
     right: 5px;
     display: inline-block;
 }
@@ -22,23 +22,23 @@ body {
     display: inline-block;
 }
 
-.line_box {
+.line-box {
     margin-top: 24px;
 }
 
-.line_label {
+.line-label {
     white-space: pre;
     text-wrap: wrap;
 }
 
-.line_content {
+.line-content {
     font-size: 0.7em;
     color: #808080;
     white-space: pre;
     text-wrap: wrap;
 }
 
-.line_button {
+.line-button {
     background-color: rgba(25, 25, 25, 0);
     color: #9d9d9d;
     cursor: pointer;
@@ -59,15 +59,15 @@ body {
     user-select: none;
 }
 
-.line_box:hover > .line_button {
+.line-box:hover > .line-button {
     visibility: visible;
 }
 
-#clear_button {
-    margin-right: 10px;
+#clear-button {
+    /* margin-right: 10px; */
 }
 
-.container_button {
+.container-button {
     background-color: rgba(25, 25, 25, 0.8);
     color: #9d9d9d;
     font-size: 0.5em;
@@ -85,7 +85,7 @@ body {
     user-select: none;
 }
 
-.disabled_button {
+.disabled-button {
     color: #606060;
     cursor: default;
 }
@@ -119,6 +119,8 @@ body {
     font-size: 0.5em !important;
     background-color: rgba(25, 25, 25, 0.8);
     padding: 0 5px;
-    right: 15px;
-    bottom: 15px;
+    right: 5px;
+    bottom: 5px;
 }
+
+#lines {}

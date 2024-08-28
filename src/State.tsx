@@ -1,5 +1,6 @@
 import { createEffect } from "solid-js";
 import { produce, SetStoreFunction } from "solid-js/store";
+import styles from "./App.module.css"
 
 export type TextEntry = {
     label: string;

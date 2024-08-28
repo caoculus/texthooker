@@ -38,17 +38,17 @@ const Entry: Component<EntryProps> = ({
     return (
         <div
             ref={boxRef!}
-            class={styles.line_box}
+            class={styles.lineBox}
         >
-            <span class={styles.line_label}>{entry.label}</span>
+            <span class={styles.lineLabel}>{entry.label}</span>
             <div
-                class={styles.line_button}
+                class={styles.lineButton}
                 onClick={onEdit}
             >
                 🖉
             </div>
             <div
-                class={styles.line_button}
+                class={styles.lineButton}
                 onClick={removeEntry}
             >
                 ×
@@ -57,14 +57,14 @@ const Entry: Component<EntryProps> = ({
             <Show when={contentVisible()}>
                 <span
                     ref={contentRef!}
-                    class={styles.line_content}
+                    class={styles.lineContent}
                     onFocusOut={onFocusOut}
                     onClick={onEdit}
                 >
                     {entry.content}
                 </span>
                 <div
-                    class={styles.line_button}
+                    class={styles.lineButton}
                     onClick={revertContent}
                 >
                     ↶
@@ -137,36 +137,36 @@ const App: Component = () => {
             <div style={`font-size: ${state.fontSize}px`}>
                 <div class={styles.container}>
                     <div
-                        class={styles.container_button}
-                        id={styles.clear_button}
+                        class={styles.containerButton}
+                        id={styles.clearButton}
                         title="Clear localStorage"
                         onClick={() => wrapper.clearEntries()}
                     >
                         <i class="nf nf-md-delete"></i>
                     </div>
                     <div
-                        class={`${styles.container_button} ${state.redoStack.length === 0 ? styles.disabled_button : ""}`}
+                        class={`${styles.containerButton} ${state.redoStack.length === 0 ? styles.disabledButton : ""}`}
                         title="Redo last action"
                         onClick={redo}
                     >
                         <i class="nf nf-md-redo"></i>
                     </div>
                     <div
-                        class={`${styles.container_button} ${state.undoStack.length === 0 ? styles.disabled_button : ""}`}
+                        class={`${styles.containerButton} ${state.undoStack.length === 0 ? styles.disabledButton : ""}`}
                         title="Undo last action"
                         onClick={undo}
                     >
                         <i class="nf nf-md-undo"></i>
                     </div>
                     <div
-                        class={`${styles.container_button} ${state.selected.idxs.length <= 1 ? styles.disabled_button : ""}`}
+                        class={`${styles.containerButton} ${state.selected.idxs.length <= 1 ? styles.disabledButton : ""}`}
                         title="Undo last action"
                         onClick={distribute}
                     >
                         <i class="nf nf-md-call_split"></i>
                     </div>
                     <div
-                        class={styles.container_button}
+                        class={styles.containerButton}
                         title="Download as JSON"
                         onClick={downloadJson}
                     >
@@ -181,9 +181,9 @@ const App: Component = () => {
                 </div>
                 <div id={styles.settings}>
                     <div>
-                        <label for={styles["font-size-input"]}>Font Size</label>
+                        <label for={styles.fontSizeInput}>Font Size</label>
                         <input
-                            id={styles["font-size-input"]}
+                            id={styles.fontSizeInput}
                             type="number"
                             min="0"
                             onInput={handleFontSize}

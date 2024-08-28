@@ -19,4 +19,9 @@ export default defineConfig({
         target: "esnext",
         sourcemap: true,
     },
+    css: {
+        modules: {
+            localsConvention: "camelCaseOnly",
+        },
+    },
 });
