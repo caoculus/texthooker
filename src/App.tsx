@@ -3,17 +3,15 @@ import { createSignal, For, Show, type Component } from "solid-js";
 import styles from "./App.module.css";
 
 import { createStore } from "solid-js/store";
-import { State, StateWrapper, UpdateType } from "./State";
+import { State, StateWrapper, TextEntry, UpdateType } from "./State";
 
 type EntryProps = {
-    label: string;
-    content: string;
+    entry: TextEntry;
     removeEntry: () => void;
     setContent: (content: string) => void;
 };
 const Entry: Component<EntryProps> = ({
-    label,
-    content,
+    entry,
     removeEntry,
     setContent,
 }: EntryProps) => {
@@ -31,10 +29,10 @@ const Entry: Component<EntryProps> = ({
         setContent(contentRef.innerText);
     };
     const revertContent = () => {
-        setContent(label);
+        setContent(entry.label);
     };
     const contentVisible = () => {
-        return focused() || label != content;
+        return focused() || entry.label != entry.content;
     };
 
     return (
@@ -42,7 +40,7 @@ const Entry: Component<EntryProps> = ({
             ref={boxRef!}
             class={styles.line_box}
         >
-            <span class={styles.line_label}>{label}</span>
+            <span class={styles.line_label}>{entry.label}</span>
             <div
                 class={styles.line_button}
                 onClick={onEdit}
@@ -63,7 +61,7 @@ const Entry: Component<EntryProps> = ({
                     onFocusOut={onFocusOut}
                     onClick={onEdit}
                 >
-                    {content}
+                    {entry.content}
                 </span>
                 <div
                     class={styles.line_button}
@@ -198,8 +196,7 @@ const App: Component = () => {
                         {(entry, idx) => {
                             return (
                                 <Entry
-                                    label={entry.label}
-                                    content={entry.content}
+                                    entry={entry}
                                     removeEntry={() =>
                                         wrapper.removeEntry(idx())
                                     }

@@ -1,19 +1,19 @@
 import { createEffect } from "solid-js";
 import { produce, SetStoreFunction } from "solid-js/store";
 
-type TextEntry = {
-    label: string,
-    content: string,
+export type TextEntry = {
+    label: string;
+    content: string;
 };
 
 type Edit = {
-    idx: number,
-    newContent: string,
+    idx: number;
+    newContent: string;
 };
 
 type Selected = {
-    text: string,
-    idxs: number[],
+    text: string;
+    idxs: number[];
 };
 
 export enum UpdateType {
@@ -25,18 +25,18 @@ export enum UpdateType {
 }
 
 type Update =
-    | { type: UpdateType.Add, idx: number, entry: TextEntry }
-    | { type: UpdateType.Remove, idx: number }
-    | { type: UpdateType.Edit, edit: Edit }
-    | { type: UpdateType.Distribute, edits: Edit[] }
-    | { type: UpdateType.Clear, entries: TextEntry[] };
+    | { type: UpdateType.Add; idx: number; entry: TextEntry }
+    | { type: UpdateType.Remove; idx: number }
+    | { type: UpdateType.Edit; edit: Edit }
+    | { type: UpdateType.Distribute; edits: Edit[] }
+    | { type: UpdateType.Clear; entries: TextEntry[] };
 
 export type State = {
-    entries: TextEntry[],
-    fontSize: number,
-    undoStack: Update[],
-    redoStack: Update[],
-    selected: Selected,
+    entries: TextEntry[];
+    fontSize: number;
+    undoStack: Update[];
+    redoStack: Update[];
+    selected: Selected;
 };
 
 type StackName = "undoStack" | "redoStack";
@@ -56,14 +56,17 @@ export class StateWrapper {
             this.setState(key, JSON.parse(value));
         }
         createEffect(() => {
-            localStorage.setItem(key, JSON.stringify(this.state[key]))
-        })
+            localStorage.setItem(key, JSON.stringify(this.state[key]));
+        });
     }
 
     setupObserver(): void {
         const observer = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
-                if (mutation.target !== document.body || mutation.type !== "childList") {
+                if (
+                    mutation.target !== document.body ||
+                    mutation.type !== "childList"
+                ) {
                     continue;
                 }
                 for (const node of mutation.addedNodes) {
@@ -88,11 +91,10 @@ export class StateWrapper {
     applyEdit(edit: Edit): Edit {
         let { idx, newContent } = edit;
         let oldContent!: string;
-        this.setState("entries", produce((entries) => {
-            const entry = entries[idx]
-            oldContent = entry.content;
-            entries[idx] = { ...entry, content: newContent };
-        }));
+        this.setState("entries", idx, "content", (content) => {
+            oldContent = content;
+            return newContent;
+        });
         return { idx, newContent: oldContent };
     }
 
@@ -101,19 +103,27 @@ export class StateWrapper {
         switch (update.type) {
             case UpdateType.Add: {
                 const { idx, entry } = update;
-                setState("entries", produce((entries) => {
-                    if (idx === undefined) { }
-                    entries.push(entry);
-                }));
-                return { type: UpdateType.Remove, idx: state.entries.length - 1 };
+                setState(
+                    "entries",
+                    produce((entries) => {
+                        entries.splice(idx, 0, entry);
+                    }),
+                );
+                return {
+                    type: UpdateType.Remove,
+                    idx: state.entries.length - 1,
+                };
             }
             case UpdateType.Remove: {
                 const { idx } = update;
                 let entry: TextEntry;
-                setState("entries", produce((entries) => {
-                    entry = entries[idx];
-                    entries.splice(idx, 1);
-                }));
+                setState(
+                    "entries",
+                    produce((entries) => {
+                        entry = entries[idx];
+                        entries.splice(idx, 1);
+                    }),
+                );
                 return { type: UpdateType.Add, idx, entry: entry! };
             }
             case UpdateType.Edit: {
@@ -125,7 +135,7 @@ export class StateWrapper {
                 return {
                     type: UpdateType.Distribute,
                     edits: edits.map((edit) => this.applyEdit(edit)),
-                }
+                };
             }
             case UpdateType.Clear: {
                 const { entries: newEntries } = update;
@@ -138,15 +148,22 @@ export class StateWrapper {
 
     updateAndPushUndo(update: Update): void {
         const { setState } = this;
-        setState("undoStack", produce((stack) => {
-            stack.push(this.updateAndGetReverse(update));
-        }));
+        setState(
+            "undoStack",
+            produce((stack) => {
+                stack.push(this.updateAndGetReverse(update));
+            }),
+        );
         setState("redoStack", []);
     }
 
     addEntry(entry: TextEntry): void {
         const { state } = this;
-        this.updateAndPushUndo({ type: UpdateType.Add, idx: state.entries.length, entry });
+        this.updateAndPushUndo({
+            type: UpdateType.Add,
+            idx: state.entries.length,
+            entry,
+        });
         // scroll page to bottom
         window.scrollTo(0, document.body.scrollHeight);
     }
@@ -164,20 +181,29 @@ export class StateWrapper {
     editContent(idx: number, newContent: string): void {
         const entry = this.state.entries[idx];
         if (entry.content !== newContent) {
-            this.updateAndPushUndo({ type: UpdateType.Edit, edit: { idx, newContent: newContent } });
+            this.updateAndPushUndo({
+                type: UpdateType.Edit,
+                edit: { idx, newContent: newContent },
+            });
         }
     }
 
     updateWithStack(from: StackName, to: StackName): void {
         let { setState } = this;
         let update: Update | undefined;
-        setState(from, produce((stack) => {
-            update = stack.pop();
-        }));
+        setState(
+            from,
+            produce((stack) => {
+                update = stack.pop();
+            }),
+        );
         if (update !== undefined) {
-            setState(to, produce((stack) => {
-                stack.push(this.updateAndGetReverse(update!));
-            }))
+            setState(
+                to,
+                produce((stack) => {
+                    stack.push(this.updateAndGetReverse(update!));
+                }),
+            );
         }
     }
 
@@ -201,7 +227,7 @@ export class StateWrapper {
             }
             const newContent = parts.join("\n");
             return { idx, newContent };
-        })
+        });
     }
 
     calcSelection(): Selected | null {
@@ -222,6 +248,5 @@ export class StateWrapper {
             return selection.containsNode(lineBox, true);
         });
         return { text: selectedText, idxs: selectedIdxs };
-    };
+    }
 }
-
