@@ -115,8 +115,7 @@ const App: Component = () => {
         wrapper.updateWithStack("redoStack", "undoStack");
     };
     const downloadJson = () => {
-        const entries = state.entries.map((entry) => JSON.stringify(entry));
-        const blob = new Blob(entries);
+        const blob = new Blob([JSON.stringify(state.entries)]);
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
         a.download = "in.json";
