@@ -1,6 +1,6 @@
 import { createEffect } from "solid-js";
 import { produce, SetStoreFunction } from "solid-js/store";
-import styles from "./App.module.css"
+import styles from "./App.module.css";
 
 export type TextEntry = {
     label: string;
@@ -214,8 +214,10 @@ export class StateWrapper {
             return s.length > 0 ? `（${s}）` : s;
         }
 
-        const labels = this.state.entries.map((entry) => entry.label);
-        return this.state.selected.idxs.map((idx, i) => {
+        const { state } = this;
+        const idxs = state.selected.idxs;
+        const labels = idxs.map((i) => state.entries[i].label);
+        return idxs.map((idx, i) => {
             const parts: string[] = [];
             const before = joinParenthesized(labels.slice(0, i));
             const after = joinParenthesized(labels.slice(i + 1));
