@@ -131,6 +131,30 @@ const App: Component = () => {
         setState("selected", wrapper.calcSelection() ?? { text: "", idxs: [] });
     });
 
+    // Undo and redo keys
+    document.addEventListener("keydown", (ev) => {
+        if (ev.key == "z" && ev.ctrlKey && !ev.shiftKey && !ev.altKey) {
+            undo();
+        }
+    });
+    document.addEventListener("keydown", (ev) => {
+        if (ev.key == "y" && ev.ctrlKey && !ev.shiftKey && !ev.altKey) {
+            redo();
+        }
+    });
+    // Unfocus on esc
+    document.addEventListener("keydown", (ev) => {
+        if (
+            ev.key == "Escape" &&
+            !ev.ctrlKey &&
+            !ev.shiftKey &&
+            !ev.altKey &&
+            document.activeElement !== null
+        ) {
+            (document.activeElement as HTMLElement).blur();
+        }
+    });
+
     return (
         <>
             <div style={`font-size: ${state.fontSize}px`}>
