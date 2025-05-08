@@ -390,7 +390,6 @@ fn LineView(
     };
     view! {
         <div node_ref=box_el class="line_box">
-            <span class="line_bullet" />
             <span node_ref=line_el class="line_text" on:focusout=on_unfocus>
                 {text}
             </span>

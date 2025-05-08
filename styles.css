@@ -27,17 +27,6 @@ body {
   margin-top: 24px;
 }
 
-.line_bullet {
-  display: inline-block;
-  width: 1.5em;
-  opacity: 0.1;
-  text-align: center;
-}
-
-.line_bullet::before {
-  content: "•";
-}
-
 .line_text {
   white-space: pre;
   text-wrap: wrap;
