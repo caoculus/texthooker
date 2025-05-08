@@ -189,6 +189,9 @@ fn App() -> impl IntoView {
                     }
                 }
             />
+            <div class="line_box">
+                <span class="line_text">{'\u{200b}'}</span> // zero-width space
+            </div>
         </div>
     }
 }
