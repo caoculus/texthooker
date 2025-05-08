@@ -167,16 +167,18 @@ fn App() -> impl IntoView {
                         <LineView
                             text=line.text.clone()
                             set_text=move |new_text| {
+                                let new_text = new_text.trim();
                                 let mut lines = set_lines.write();
                                 let line = lines.get_mut(&id).unwrap();
                                 if line.text == new_text {
-                                    return;
+                                    return false;
                                 }
-                                let old_text = mem::replace(&mut line.text, new_text);
+                                let old_text = mem::replace(&mut line.text, new_text.to_owned());
                                 line.version += 1;
                                 set_undo_stack
                                     .write()
                                     .push_and_clear_redos(UndoEntry::Edit(id, old_text));
+                                true
                             }
                             remove=move || {
                                 let line = set_lines.write().remove(&id).unwrap();
@@ -377,10 +379,11 @@ fn FontControl(font_size: Signal<FontSize>, set_font_size: WriteSignal<FontSize>
 #[component]
 fn LineView(
     text: String,
-    mut set_text: impl FnMut(String) + 'static,
+    mut set_text: impl (FnMut(String) -> bool) + 'static,
     remove: impl Fn() + 'static,
     set_focused: WriteSignal<bool>,
 ) -> impl IntoView {
+    let text = StoredValue::new(text);
     let box_el = NodeRef::<Div>::new();
     let line_el = NodeRef::<Span>::new();
     let on_edit = move |_| {
@@ -393,17 +396,19 @@ fn LineView(
         set_focused(false);
         let target = line_el.get().unwrap();
         target.set_content_editable("false");
-        set_text(target.inner_text());
+        let changed = set_text(target.inner_text());
+        if !changed {
+            target.set_inner_text(text.read_value().as_str());
+        }
     };
     view! {
         <div node_ref=box_el class="line_box">
             <span node_ref=line_el class="line_text" on:focusout=on_unfocus>
-                {text}
+                {text.get_value()}
             </span>
             <div class="line_button" on:click=on_edit>
                 "🖉"
             </div>
-
             <div class="line_button" on:click=move |_| remove()>
                 "×"
             </div>
