@@ -1,0 +1,129 @@
+/* Mostly stolen from https://learnjapanese.moe/texthooker.html */
+body {
+  background-color: #202020;
+  color: #bdbdbd;
+  color-scheme: dark;
+  font-weight: 400;
+  line-height: 100%;
+  font-family: "Noto Sans JP";
+}
+
+#container {
+  position: fixed;
+  top: 5px;
+  right: 5px;
+  display: inline-block;
+}
+
+#container > div {
+  display: inline-block;
+}
+
+#lines {
+  margin: 5%;
+}
+
+.line_box {
+  margin-top: 24px;
+}
+
+.line_bullet {
+  display: inline-block;
+  width: 1.5em;
+  opacity: 0.1;
+  text-align: center;
+}
+
+.line_bullet::before {
+  content: "•";
+}
+
+.line_text {
+  white-space: pre;
+  text-wrap: wrap;
+}
+
+.line_button {
+  background-color: rgba(25, 25, 25, 0);
+  color: #9d9d9d;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 0.5em;
+  line-height: 100%;
+  margin-left: 8px;
+  margin-bottom: 2px;
+  padding: 5px;
+  visibility: hidden;
+
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+}
+
+.line_button:hover {
+  color: #bdbdbd;
+}
+
+.line_box:hover > .line_button {
+  visibility: visible;
+}
+
+.container_button {
+  background-color: rgba(25, 25, 25, 0.8);
+  color: #9d9d9d;
+  font-size: 0.5em;
+  line-height: 100%;
+  float: right;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.container_button.disabled_button {
+  color: #606060;
+  cursor: default;
+}
+
+#counter {
+  background-color: rgba(25, 25, 25, 0.8);
+  color: #9d9d9d;
+  font-size: 0.5em;
+  line-height: 100%;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  float: right;
+  text-align: right;
+}
+
+#font-size-input {
+  margin-left: auto;
+  font-size: 0.6rem;
+  right: 0;
+  color: white;
+  background-color: transparent;
+  width: 2.5rem;
+  margin-left: 1.35rem;
+  border: #686868 1px solid;
+}
+
+#settings {
+  position: fixed;
+  font-size: 0.5em !important;
+  background-color: rgba(25, 25, 25, 0.8);
+  padding: 0 5px;
+  right: 15px;
+  bottom: 15px;
+}
