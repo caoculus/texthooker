@@ -99,16 +99,15 @@ fn App() -> impl IntoView {
     };
 
     // Undo key
+    let (focused, set_focused) = signal(false);
     _ = use_event_listener(document(), ev::keydown, move |ev| {
-        let ev = ev.unchecked_ref::<KeyboardEvent>();
-        if ev.code() == "KeyZ" && ev.ctrl_key() && !ev.shift_key() && !ev.alt_key() {
+        if ev.code() == "KeyZ" && ev.ctrl_key() && !ev.shift_key() && !ev.alt_key() && !focused() {
             undo();
         }
     });
     // redo key
     _ = use_event_listener(document(), ev::keydown, move |ev| {
-        let ev = ev.unchecked_ref::<KeyboardEvent>();
-        if ev.code() == "KeyY" && ev.ctrl_key() && !ev.shift_key() && !ev.alt_key() {
+        if ev.code() == "KeyY" && ev.ctrl_key() && !ev.shift_key() && !ev.alt_key() && !focused() {
             redo();
         }
     });
@@ -185,12 +184,14 @@ fn App() -> impl IntoView {
                                     .write()
                                     .push_and_clear_redos(UndoEntry::Add(id, line));
                             }
+                            set_focused
                         />
                     }
                 }
             />
             <div class="line_box">
-                <span class="line_text">{'\u{200b}'}</span> // zero-width space
+                // zero-width space
+                <span class="line_text">{'\u{200b}'}</span>
             </div>
         </div>
     }
@@ -378,15 +379,18 @@ fn LineView(
     text: String,
     mut set_text: impl FnMut(String) + 'static,
     remove: impl Fn() + 'static,
+    set_focused: WriteSignal<bool>,
 ) -> impl IntoView {
     let box_el = NodeRef::<Div>::new();
     let line_el = NodeRef::<Span>::new();
     let on_edit = move |_| {
+        set_focused(true);
         let target = line_el.get().unwrap();
         target.set_content_editable("true");
         _ = target.focus();
     };
     let on_unfocus = move |_| {
+        set_focused(false);
         let target = line_el.get().unwrap();
         target.set_content_editable("false");
         set_text(target.inner_text());
