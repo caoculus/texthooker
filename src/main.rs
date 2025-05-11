@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, mem};
 
-use leptos::{ev, html::Span, prelude::*, server::codee::string::JsonSerdeCodec};
+use leptos::{either::Either, ev, html::Div, prelude::*, server::codee::string::JsonSerdeCodec};
 use leptos_meta::{Html, provide_meta_context};
 use leptos_use::{storage::use_local_storage, use_active_element, use_event_listener};
 use serde::{Deserialize, Serialize};
@@ -392,26 +392,26 @@ fn FontControl(font_size: Signal<FontSize>, set_font_size: WriteSignal<FontSize>
 #[component]
 fn LineView(
     text: String,
-    mut set_text: impl (FnMut(String) -> bool) + 'static,
+    mut set_text: impl (FnMut(String) -> bool) + Copy + Send + Sync + 'static,
     remove: impl Fn() + Copy + Send + Sync + 'static,
     set_any_focused: WriteSignal<bool>,
     needs_focus: bool,
 ) -> impl IntoView {
     let text = StoredValue::new(text);
-    let line_el = NodeRef::<Span>::new();
+    let line_el = NodeRef::<Div>::new();
     let (focused, set_focused) = signal(false);
     let focus = move || {
         set_focused(true);
         set_any_focused(true);
-        let target = line_el.get().unwrap();
-        target.set_content_editable("true");
-        _ = target.focus();
+        request_animation_frame(move || {
+            let target = line_el.get_untracked().unwrap();
+            _ = target.focus();
+        });
     };
     let mut unfocus = move || {
         set_focused(false);
         set_any_focused(false);
         let target = line_el.get().unwrap();
-        target.set_content_editable("false");
         let changed = set_text(target.inner_text());
         if !changed {
             target.set_inner_text(text.read_value().as_str());
@@ -422,17 +422,34 @@ fn LineView(
     }
     view! {
         <div class="line_box">
-            <span node_ref=line_el class="line_text" on:focusout=move |_| unfocus()>
-                {text.get_value()}
-            </span>
-            <Show when=move || !focused()>
-                <span class="line_button" on:click=move |_| focus()>
-                    "🖉"
-                </span>
-                <span class="line_button" on:click=move |_| remove()>
-                    "×"
-                </span>
-            </Show>
+            {move || {
+                if focused() {
+                    Either::Left(
+                        view! {
+                            <div
+                                node_ref=line_el
+                                class="line_text"
+                                contenteditable="true"
+                                on:focusout=move |_| unfocus()
+                            >
+                                {text.get_value()}
+                            </div>
+                        },
+                    )
+                } else {
+                    Either::Right(
+                        view! {
+                            <span class="line_text">{text.get_value()}</span>
+                            <span class="line_button" on:click=move |_| focus()>
+                                "🖉"
+                            </span>
+                            <span class="line_button" on:click=move |_| remove()>
+                                "×"
+                            </span>
+                        },
+                    )
+                }
+            }}
         </div>
     }
 }
