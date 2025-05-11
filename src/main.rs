@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, mem};
 
-use leptos::{ev, html::Div, prelude::*, server::codee::string::JsonSerdeCodec};
+use leptos::{ev, html::Span, prelude::*, server::codee::string::JsonSerdeCodec};
 use leptos_meta::{Html, provide_meta_context};
 use leptos_use::{storage::use_local_storage, use_active_element, use_event_listener};
 use serde::{Deserialize, Serialize};
@@ -90,6 +90,7 @@ fn App() -> impl IntoView {
             }
         };
         undo_stack.redos.push(redo_entry);
+        last_manually_added.set_value(None);
     };
     let redo = move || {
         let undo_stack = &mut set_undo_stack.write();
@@ -118,18 +119,29 @@ fn App() -> impl IntoView {
             }
         };
         undo_stack.undos.push(undo_entry);
+        last_manually_added.set_value(None);
     };
 
     // Undo key
-    let (focused, set_focused) = signal(false);
+    let (any_focused, set_any_focused) = signal(false);
     _ = use_event_listener(document(), ev::keydown, move |ev| {
-        if ev.code() == "KeyZ" && ev.ctrl_key() && !ev.shift_key() && !ev.alt_key() && !focused() {
+        if ev.code() == "KeyZ"
+            && ev.ctrl_key()
+            && !ev.shift_key()
+            && !ev.alt_key()
+            && !any_focused()
+        {
             undo();
         }
     });
     // redo key
     _ = use_event_listener(document(), ev::keydown, move |ev| {
-        if ev.code() == "KeyY" && ev.ctrl_key() && !ev.shift_key() && !ev.alt_key() && !focused() {
+        if ev.code() == "KeyY"
+            && ev.ctrl_key()
+            && !ev.shift_key()
+            && !ev.alt_key()
+            && !any_focused()
+        {
             redo();
         }
     });
@@ -210,7 +222,7 @@ fn App() -> impl IntoView {
                             }
                             needs_focus=line.version == 0
                                 && last_manually_added.get_value() == Some(id)
-                            set_focused
+                            set_any_focused
                         />
                     }
                 }
@@ -381,20 +393,23 @@ fn FontControl(font_size: Signal<FontSize>, set_font_size: WriteSignal<FontSize>
 fn LineView(
     text: String,
     mut set_text: impl (FnMut(String) -> bool) + 'static,
-    remove: impl Fn() + 'static,
-    set_focused: WriteSignal<bool>,
+    remove: impl Fn() + Copy + Send + Sync + 'static,
+    set_any_focused: WriteSignal<bool>,
     needs_focus: bool,
 ) -> impl IntoView {
     let text = StoredValue::new(text);
-    let line_el = NodeRef::<Div>::new();
+    let line_el = NodeRef::<Span>::new();
+    let (focused, set_focused) = signal(false);
     let focus = move || {
         set_focused(true);
+        set_any_focused(true);
         let target = line_el.get().unwrap();
         target.set_content_editable("true");
         _ = target.focus();
     };
     let mut unfocus = move || {
         set_focused(false);
+        set_any_focused(false);
         let target = line_el.get().unwrap();
         target.set_content_editable("false");
         let changed = set_text(target.inner_text());
@@ -407,16 +422,17 @@ fn LineView(
     }
     view! {
         <div class="line_box">
-            <div class="line_bullet" />
-            <div node_ref=line_el class="line_text" on:focusout=move |_| unfocus()>
+            <span node_ref=line_el class="line_text" on:focusout=move |_| unfocus()>
                 {text.get_value()}
-            </div>
-            <div class="line_button" on:click=move |_| focus()>
-                "🖉"
-            </div>
-            <div class="line_button" on:click=move |_| remove()>
-                "×"
-            </div>
+            </span>
+            <Show when=move || !focused()>
+                <span class="line_button" on:click=move |_| focus()>
+                    "🖉"
+                </span>
+                <span class="line_button" on:click=move |_| remove()>
+                    "×"
+                </span>
+            </Show>
         </div>
     }
 }

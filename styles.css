@@ -42,11 +42,15 @@ body {
 .line_text {
   white-space: pre;
   text-wrap: wrap;
-  display: inline-block;
 }
 
 .line_text:empty::before {
-  content: "\200b";  /* zero-width space, to force line height */
+  content: "<empty>";
+  opacity: 0.5;
+}
+
+.line_text[contenteditable="true"]:empty::before {
+  content: "\200b"; /* zero-width space */
 }
 
 .line_button {
