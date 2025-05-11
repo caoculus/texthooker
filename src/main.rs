@@ -1,11 +1,6 @@
 use std::{collections::BTreeMap, mem};
 
-use leptos::{
-    ev,
-    html::{Div, Span},
-    prelude::*,
-    server::codee::string::JsonSerdeCodec,
-};
+use leptos::{ev, html::Div, prelude::*, server::codee::string::JsonSerdeCodec};
 use leptos_meta::{Html, provide_meta_context};
 use leptos_use::{storage::use_local_storage, use_active_element, use_event_listener};
 use serde::{Deserialize, Serialize};
@@ -28,8 +23,35 @@ fn App() -> impl IntoView {
     normalize_line_map(set_lines);
 
     let (undo_stack, set_undo_stack) = signal(UndoStack::new());
-    let selected_text = setup_selected_observer();
-    setup_mutation_observer(selected_text, lines, set_lines, set_undo_stack);
+
+    let id_counter = StoredValue::new(lines.read_untracked().len());
+    let add_entry = move |text: String| {
+        let body = document().body().unwrap();
+        let at_bottom = window().inner_height().unwrap().unchecked_into_f64()
+            + window().scroll_y().unwrap()
+            >= body.offset_height() as f64;
+        let next_id = id_counter.get_value();
+        *id_counter.write_value() += 1;
+        set_lines.write().insert(next_id, Line::new(text));
+        set_undo_stack
+            .write()
+            .push_and_clear_redos(UndoEntry::Remove(next_id));
+
+        request_animation_frame(move || {
+            if at_bottom {
+                window().scroll_to_with_x_and_y(0.0, body.scroll_height() as f64);
+            }
+        });
+    };
+
+    setup_mutation_observer(add_entry);
+    let last_manually_added = StoredValue::new(None::<Id>);
+
+    let manually_add_entry = move || {
+        let id = id_counter.get_value();
+        last_manually_added.set_value(Some(id));
+        add_entry(String::new());
+    };
 
     let clear = move || {
         let lines = &mut *set_lines.write();
@@ -186,14 +208,17 @@ fn App() -> impl IntoView {
                                     .write()
                                     .push_and_clear_redos(UndoEntry::Add(id, line));
                             }
+                            needs_focus=line.version == 0
+                                && last_manually_added.get_value() == Some(id)
                             set_focused
                         />
                     }
                 }
             />
             <div class="line_box">
-                // zero-width space
-                <span class="line_text">{'\u{200b}'}</span>
+                <div class="line_button" on:click=move |_| manually_add_entry()>
+                    "➕"
+                </div>
             </div>
         </div>
     }
@@ -211,7 +236,7 @@ fn normalize_line_map(set_lines: WriteSignal<LineMap>) {
         .collect();
 }
 
-fn setup_selected_observer() -> ReadSignal<String> {
+fn use_selected_text() -> ReadSignal<String> {
     let (selected_text, set_selected_text) = signal(String::new());
     let calculate_selected_text = move || -> Option<String> {
         window()
@@ -229,34 +254,10 @@ fn setup_selected_observer() -> ReadSignal<String> {
     selected_text
 }
 
-fn setup_mutation_observer(
-    selected_text: ReadSignal<String>,
-    lines: Signal<LineMap>,
-    set_lines: WriteSignal<LineMap>,
-    set_undo_stack: WriteSignal<UndoStack>,
-) {
+fn setup_mutation_observer(add_entry: impl Fn(String) + 'static) {
+    let selected_text = use_selected_text();
     let body = document().body().unwrap();
     let body_node: Node = body.clone().into();
-    let id = StoredValue::new(lines.read_untracked().len());
-
-    let add_entry = move |text: String| {
-        let body = document().body().unwrap();
-        let at_bottom = window().inner_height().unwrap().unchecked_into_f64()
-            + window().scroll_y().unwrap()
-            >= body.offset_height() as f64;
-        let next_id = id.get_value();
-        *id.write_value() += 1;
-        set_lines.write().insert(next_id, Line::new(text));
-        set_undo_stack
-            .write()
-            .push_and_clear_redos(UndoEntry::Remove(next_id));
-
-        request_animation_frame(move || {
-            if at_bottom {
-                window().scroll_to_with_x_and_y(0.0, body.scroll_height() as f64);
-            }
-        });
-    };
 
     let callback = Closure::<dyn Fn(Array, MutationObserver)>::new(move |array: Array, _| {
         array
@@ -382,17 +383,17 @@ fn LineView(
     mut set_text: impl (FnMut(String) -> bool) + 'static,
     remove: impl Fn() + 'static,
     set_focused: WriteSignal<bool>,
+    needs_focus: bool,
 ) -> impl IntoView {
     let text = StoredValue::new(text);
-    let box_el = NodeRef::<Div>::new();
-    let line_el = NodeRef::<Span>::new();
-    let on_edit = move |_| {
+    let line_el = NodeRef::<Div>::new();
+    let focus = move || {
         set_focused(true);
         let target = line_el.get().unwrap();
         target.set_content_editable("true");
         _ = target.focus();
     };
-    let on_unfocus = move |_| {
+    let mut unfocus = move || {
         set_focused(false);
         let target = line_el.get().unwrap();
         target.set_content_editable("false");
@@ -401,12 +402,16 @@ fn LineView(
             target.set_inner_text(text.read_value().as_str());
         }
     };
+    if needs_focus {
+        request_animation_frame(focus);
+    }
     view! {
-        <div node_ref=box_el class="line_box">
-            <span node_ref=line_el class="line_text" on:focusout=on_unfocus>
+        <div class="line_box">
+            <div class="line_bullet" />
+            <div node_ref=line_el class="line_text" on:focusout=move |_| unfocus()>
                 {text.get_value()}
-            </span>
-            <div class="line_button" on:click=on_edit>
+            </div>
+            <div class="line_button" on:click=move |_| focus()>
                 "🖉"
             </div>
             <div class="line_button" on:click=move |_| remove()>

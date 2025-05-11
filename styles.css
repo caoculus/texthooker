@@ -20,16 +20,33 @@ body {
 }
 
 #lines {
-  margin: 5%;
+  margin: 50px;
 }
 
 .line_box {
   margin-top: 24px;
 }
 
+.line_bullet {
+  display: inline-block;
+  width: 1.5em;
+  opacity: 0.1;
+  text-align: center;
+  vertical-align: top;
+}
+
+.line_bullet::before {
+  content: "•";
+}
+
 .line_text {
   white-space: pre;
   text-wrap: wrap;
+  display: inline-block;
+}
+
+.line_text:empty::before {
+  content: "\200b";  /* zero-width space, to force line height */
 }
 
 .line_button {
