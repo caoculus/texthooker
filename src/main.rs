@@ -24,32 +24,36 @@ fn App() -> impl IntoView {
 
     let (undo_stack, set_undo_stack) = signal(UndoStack::new());
 
-    let id_counter = StoredValue::new(lines.read_untracked().len());
-    let add_entry = move |text: String| {
-        let body = document().body().unwrap();
-        let at_bottom = window().inner_height().unwrap().unchecked_into_f64()
-            + window().scroll_y().unwrap()
-            >= body.offset_height() as f64;
-        let next_id = id_counter.get_value();
-        *id_counter.write_value() += 1;
-        set_lines.write().insert(next_id, Line::new(text));
-        set_undo_stack
-            .write()
-            .push_and_clear_redos(UndoEntry::Remove(next_id));
+    let add_entry = {
+        let id_counter = StoredValue::new(lines.read_untracked().len());
+        move |text: String| {
+            let body = document().body().unwrap();
+            let at_bottom = window().inner_height().unwrap().unchecked_into_f64()
+                + window().scroll_y().unwrap()
+                >= body.offset_height() as f64;
+            let next_id = id_counter.get_value();
+            *id_counter.write_value() += 1;
+            set_lines.write().insert(next_id, Line::new(text));
+            set_undo_stack
+                .write()
+                .push_and_clear_redos(UndoEntry::Remove(next_id));
 
-        request_animation_frame(move || {
-            if at_bottom {
-                window().scroll_to_with_x_and_y(0.0, body.scroll_height() as f64);
-            }
-        });
+            request_animation_frame(move || {
+                if at_bottom {
+                    window().scroll_to_with_x_and_y(0.0, body.scroll_height() as f64);
+                }
+            });
+        }
     };
 
     setup_mutation_observer(add_entry);
-    let last_manually_added = StoredValue::new(None::<Id>);
 
-    let manually_add_entry = move || {
-        let id = id_counter.get_value();
-        last_manually_added.set_value(Some(id));
+    // idea: needs_focus is a flag for whether we are adding a new empty entry that needs to be
+    // focused
+    // the flag gets "taken" when the new entry is rendered
+    let needs_focus = StoredValue::new(false);
+    let add_focused_entry = move || {
+        needs_focus.set_value(true);
         add_entry(String::new());
     };
 
@@ -90,7 +94,6 @@ fn App() -> impl IntoView {
             }
         };
         undo_stack.redos.push(redo_entry);
-        last_manually_added.set_value(None);
     };
     let redo = move || {
         let undo_stack = &mut set_undo_stack.write();
@@ -119,7 +122,6 @@ fn App() -> impl IntoView {
             }
         };
         undo_stack.undos.push(undo_entry);
-        last_manually_added.set_value(None);
     };
 
     // Undo key
@@ -220,15 +222,14 @@ fn App() -> impl IntoView {
                                     .write()
                                     .push_and_clear_redos(UndoEntry::Add(id, line));
                             }
-                            needs_focus=line.version == 0
-                                && last_manually_added.get_value() == Some(id)
+                            needs_focus=std::mem::take(&mut *needs_focus.write_value())
                             set_any_focused
                         />
                     }
                 }
             />
             <div class="line_box">
-                <div class="line_button" on:click=move |_| manually_add_entry()>
+                <div class="line_button" on:click=move |_| add_focused_entry()>
                     "➕"
                 </div>
             </div>
