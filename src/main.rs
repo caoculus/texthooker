@@ -1,8 +1,10 @@
 use std::{collections::BTreeMap, mem};
 
-use leptos::{either::Either, ev, html::Div, prelude::*, server::codee::string::JsonSerdeCodec};
+use leptos::{either::Either, ev, html::{Div, Span}, prelude::*, server::codee::string::JsonSerdeCodec};
 use leptos_meta::{Html, provide_meta_context};
-use leptos_use::{storage::use_local_storage, use_active_element, use_event_listener};
+use leptos_use::{
+    storage::use_local_storage, use_active_element, use_element_hover, use_event_listener,
+};
 use serde::{Deserialize, Serialize};
 use web_sys::{
     Element, HtmlElement, KeyboardEvent, MutationObserver, MutationObserverInit, Node,
@@ -399,20 +401,25 @@ fn LineView(
     needs_focus: bool,
 ) -> impl IntoView {
     let text = StoredValue::new(text);
-    let line_el = NodeRef::<Div>::new();
+    let box_el = NodeRef::<Div>::new();
+    let box_hovered = use_element_hover(box_el);
+    let edit_line_el = NodeRef::<Div>::new();
+    let line_el = NodeRef::<Span>::new();
+    let text_hovered = use_element_hover(line_el);
+    let show_buttons = move || box_hovered() && !text_hovered();
     let (focused, set_focused) = signal(false);
     let focus = move || {
         set_focused(true);
         set_any_focused(true);
         request_animation_frame(move || {
-            let target = line_el.get_untracked().unwrap();
+            let target = edit_line_el.get_untracked().unwrap();
             _ = target.focus();
         });
     };
     let mut unfocus = move || {
         set_focused(false);
         set_any_focused(false);
-        let target = line_el.get().unwrap();
+        let target = edit_line_el.get().unwrap();
         let changed = set_text(target.inner_text());
         if !changed {
             target.set_inner_text(text.read_value().as_str());
@@ -422,13 +429,13 @@ fn LineView(
         request_animation_frame(focus);
     }
     view! {
-        <div class="line_box">
+        <div class="line_box" node_ref=box_el>
             {move || {
                 if focused() {
                     Either::Left(
                         view! {
                             <div
-                                node_ref=line_el
+                                node_ref=edit_line_el
                                 class="line_text"
                                 contenteditable="true"
                                 on:focusout=move |_| unfocus()
@@ -440,13 +447,15 @@ fn LineView(
                 } else {
                     Either::Right(
                         view! {
-                            <span class="line_text">{text.get_value()}</span>
-                            <span class="line_button" on:click=move |_| focus()>
-                                "🖉"
-                            </span>
-                            <span class="line_button" on:click=move |_| remove()>
-                                "×"
-                            </span>
+                            <span class="line_text" node_ref=line_el>{text.get_value()}</span>
+                            <Show when=show_buttons>
+                                <span class="line_button" on:click=move |_| focus()>
+                                    "🖉"
+                                </span>
+                                <span class="line_button" on:click=move |_| remove()>
+                                    "×"
+                                </span>
+                            </Show>
                         },
                     )
                 }
