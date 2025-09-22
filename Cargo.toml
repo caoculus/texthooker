@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-leptos = { version = "0.8.2", features = ["csr", "nightly"] }
-leptos-use = "0.16.0-beta"
-leptos_meta = "0.8.2"
+leptos = { version = "0.8.9", features = ["csr", "nightly"] }
+leptos-use = "0.16.2"
+leptos_meta = "0.8.5"
 normalize-line-endings = "0.3.0"
-serde = { version = "1.0.219", features = ["derive"] }
-stylance = "0.6.0"
-web-sys = { version = "0.3.77", features = ["Selection"] }
+serde = { version = "1.0.226", features = ["derive"] }
+stylance = "0.7.1"
+web-sys = { version = "0.3.80", features = ["Selection"] }
