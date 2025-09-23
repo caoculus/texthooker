@@ -1,6 +1,12 @@
 use std::{collections::BTreeMap, mem};
 
-use leptos::{either::Either, ev, html::{Div, Span}, prelude::*, server::codee::string::JsonSerdeCodec};
+use leptos::{
+    either::Either,
+    ev,
+    html::{Div, Span},
+    prelude::*,
+    server::codee::string::JsonSerdeCodec,
+};
 use leptos_meta::{Html, provide_meta_context};
 use leptos_use::{
     storage::use_local_storage, use_active_element, use_element_hover, use_event_listener,
@@ -407,6 +413,7 @@ fn LineView(
     let line_el = NodeRef::<Span>::new();
     let text_hovered = use_element_hover(line_el);
     let show_buttons = move || box_hovered() && !text_hovered();
+    let hide_buttons = move || !show_buttons();
     let (focused, set_focused) = signal(false);
     let focus = move || {
         set_focused(true);
@@ -447,15 +454,23 @@ fn LineView(
                 } else {
                     Either::Right(
                         view! {
-                            <span class="line_text" node_ref=line_el>{text.get_value()}</span>
-                            <Show when=show_buttons>
-                                <span class="line_button" on:click=move |_| focus()>
-                                    "🖉"
-                                </span>
-                                <span class="line_button" on:click=move |_| remove()>
-                                    "×"
-                                </span>
-                            </Show>
+                            <span class="line_text" node_ref=line_el>
+                                {text.get_value()}
+                            </span>
+                            <span
+                                class="line_button"
+                                on:click=move |_| focus()
+                                style:visibility=move || hide_buttons().then_some("hidden")
+                            >
+                                "🖉"
+                            </span>
+                            <span
+                                class="line_button"
+                                on:click=move |_| remove()
+                                style:visibility=move || hide_buttons().then_some("hidden")
+                            >
+                                "×"
+                            </span>
                         },
                     )
                 }
