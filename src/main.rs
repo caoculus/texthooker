@@ -35,10 +35,13 @@ fn App() -> impl IntoView {
     let add_entry = {
         let id_counter = StoredValue::new(lines.read_untracked().len());
         move |text: String| {
-            let body = document().body().unwrap();
+            let doc = document()
+                .document_element()
+                .unwrap()
+                .unchecked_into::<HtmlElement>();
             let at_bottom = window().inner_height().unwrap().unchecked_into_f64()
                 + window().scroll_y().unwrap()
-                >= body.offset_height() as f64;
+                >= doc.offset_height() as f64;
             let next_id = id_counter.get_value();
             *id_counter.write_value() += 1;
             set_lines.write().insert(next_id, Line::new(text));
@@ -48,7 +51,7 @@ fn App() -> impl IntoView {
 
             request_animation_frame(move || {
                 if at_bottom {
-                    window().scroll_to_with_x_and_y(0.0, body.scroll_height() as f64);
+                    window().scroll_to_with_x_and_y(0.0, doc.scroll_height() as f64);
                 }
             });
         }
