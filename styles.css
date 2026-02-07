@@ -28,6 +28,10 @@ body {
   margin-top: 24px;
 }
 
+.line_box_last {
+  margin-bottom: 24px;
+}
+
 .line_text {
   white-space: pre;
   text-wrap: wrap;

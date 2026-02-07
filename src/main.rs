@@ -236,7 +236,7 @@ fn App() -> impl IntoView {
                     }
                 }
             />
-            <div class="line_box">
+            <div class="line_box line_box_last">
                 <div class="line_button" on:click=move |_| add_focused_entry()>
                     "➕"
                 </div>
