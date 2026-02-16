@@ -21,15 +21,9 @@ body {
 }
 
 #lines {
-  margin: 25px;
-}
-
-.line_box {
-  margin-top: 24px;
-}
-
-.line_box_last {
-  margin-bottom: 24px;
+  padding: 25px;
+  display: grid;
+  row-gap: 25px;
 }
 
 .line_text {
@@ -54,8 +48,7 @@ body {
   display: inline-block;
   font-size: 0.5em;
   line-height: 100%;
-  margin-left: 15px;
-  margin-bottom: 2px;
+  padding-bottom: 2px;
   visibility: hidden;
   vertical-align: middle;
 
@@ -74,6 +67,10 @@ body {
 
 .line_box:hover > .line_button {
   visibility: visible;
+}
+
+* + .line_button {
+  padding-left: 15px;
 }
 
 .container_button {
