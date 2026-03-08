@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, mem};
+use std::{collections::BTreeMap, mem, time::Duration};
 
 use leptos::{
     either::Either,
@@ -418,15 +418,19 @@ fn LineView(
     needs_focus: bool,
     copy: impl Fn(&str) + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
+    const COPY_TIMEOUT: Duration = Duration::from_millis(1000);
+
     let text = StoredValue::new(text);
     let box_el = NodeRef::<Div>::new();
     let box_hovered = use_element_hover(box_el);
     let edit_line_el = NodeRef::<Div>::new();
     let line_el = NodeRef::<Span>::new();
     let text_hovered = use_element_hover(line_el);
+    let (focused, set_focused) = signal(false);
+    let (copy_count, set_copy_count) = signal(0);
+
     let show_buttons = move || box_hovered() && !text_hovered();
     let visibility = move || (!show_buttons()).then_some("hidden");
-    let (focused, set_focused) = signal(false);
     let focus = move || {
         set_focused(true);
         set_any_focused(true);
@@ -444,10 +448,17 @@ fn LineView(
             target.set_inner_text(text.read_value().as_str());
         }
     };
+    let copy_symbol = move || {
+        if copy_count() > 0 {
+            "nf nf-md-check"
+        } else {
+            "nf nf-md-content_copy"
+        }
+    };
+
     if needs_focus {
         request_animation_frame(focus);
     }
-
     view! {
         <div class="line_box" node_ref=box_el>
             {move || {
@@ -481,11 +492,18 @@ fn LineView(
                                 class="line_button"
                                 on:click={
                                     let copy = copy.clone();
-                                    move |_| text.with_value(|s| copy(s))
+                                    move |_| {
+                                        *set_copy_count.write() += 1;
+                                        text.with_value(|s| copy(s));
+                                        set_timeout(
+                                            move || *set_copy_count.write() -= 1,
+                                            COPY_TIMEOUT,
+                                        );
+                                    }
                                 }
                                 style:visibility=visibility
                             >
-                                <i class="nf nf-md-content_copy"></i>
+                                <i class=copy_symbol></i>
                             </span>
                             <span
                                 class="line_button"
