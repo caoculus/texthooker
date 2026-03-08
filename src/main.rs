@@ -58,7 +58,7 @@ fn App() -> impl IntoView {
         }
     };
     let UseClipboardReturn { copied, copy, .. } = use_clipboard_with_options(
-        UseClipboardOptions::default().copied_reset_delay(100.0), // 100 ms
+        UseClipboardOptions::default().copied_reset_delay(500.0),
     );
 
     setup_mutation_observer(add_entry, copied);
