@@ -9,7 +9,8 @@ use leptos::{
 };
 use leptos_meta::{Html, provide_meta_context};
 use leptos_use::{
-    storage::use_local_storage, use_active_element, use_element_hover, use_event_listener,
+    UseClipboardOptions, UseClipboardReturn, storage::use_local_storage, use_active_element,
+    use_clipboard_with_options, use_element_hover, use_event_listener,
 };
 use serde::{Deserialize, Serialize};
 use web_sys::{
@@ -56,8 +57,11 @@ fn App() -> impl IntoView {
             });
         }
     };
+    let UseClipboardReturn { copied, copy, .. } = use_clipboard_with_options(
+        UseClipboardOptions::default().copied_reset_delay(100.0), // 100 ms
+    );
 
-    setup_mutation_observer(add_entry);
+    setup_mutation_observer(add_entry, copied);
 
     // idea: needs_focus is a flag for whether we are adding a new empty entry that needs to be
     // focused
@@ -235,6 +239,7 @@ fn App() -> impl IntoView {
                             }
                             needs_focus=std::mem::take(&mut *needs_focus.write_value())
                             set_any_focused
+                            copy=copy.clone()
                         />
                     }
                 }
@@ -278,7 +283,10 @@ fn use_selected_text() -> ReadSignal<String> {
     selected_text
 }
 
-fn setup_mutation_observer(add_entry: impl Fn(String) + 'static) {
+fn setup_mutation_observer(
+    add_entry: impl Fn(String) + 'static,
+    copied: impl (Fn() -> bool) + 'static,
+) {
     let selected_text = use_selected_text();
     let body = document().body().unwrap();
     let body_node: Node = body.clone().into();
@@ -310,7 +318,7 @@ fn setup_mutation_observer(add_entry: impl Fn(String) + 'static) {
                 let is_page_text =
                     normalize_line_endings::normalized(selected_text.read_untracked().chars())
                         .eq(normalize_line_endings::normalized(text.chars()));
-                if !is_page_text {
+                if !copied() && !is_page_text {
                     add_entry(text.to_owned());
                 }
             });
@@ -408,6 +416,7 @@ fn LineView(
     remove: impl Fn() + Copy + Send + Sync + 'static,
     set_any_focused: WriteSignal<bool>,
     needs_focus: bool,
+    copy: impl Fn(&str) + Clone + Send + Sync + 'static,
 ) -> impl IntoView {
     let text = StoredValue::new(text);
     let box_el = NodeRef::<Div>::new();
@@ -416,7 +425,7 @@ fn LineView(
     let line_el = NodeRef::<Span>::new();
     let text_hovered = use_element_hover(line_el);
     let show_buttons = move || box_hovered() && !text_hovered();
-    let hide_buttons = move || !show_buttons();
+    let visibility = move || (!show_buttons()).then_some("hidden");
     let (focused, set_focused) = signal(false);
     let focus = move || {
         set_focused(true);
@@ -438,6 +447,7 @@ fn LineView(
     if needs_focus {
         request_animation_frame(focus);
     }
+
     view! {
         <div class="line_box" node_ref=box_el>
             {move || {
@@ -463,14 +473,24 @@ fn LineView(
                             <span
                                 class="line_button"
                                 on:click=move |_| focus()
-                                style:visibility=move || hide_buttons().then_some("hidden")
+                                style:visibility=visibility
                             >
                                 "🖉"
                             </span>
                             <span
                                 class="line_button"
+                                on:click={
+                                    let copy = copy.clone();
+                                    move |_| text.with_value(|s| copy(s))
+                                }
+                                style:visibility=visibility
+                            >
+                                <i class="nf nf-md-content_copy"></i>
+                            </span>
+                            <span
+                                class="line_button"
                                 on:click=move |_| remove()
-                                style:visibility=move || hide_buttons().then_some("hidden")
+                                style:visibility=visibility
                             >
                                 "×"
                             </span>
