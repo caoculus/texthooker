@@ -387,7 +387,7 @@ struct FontSize(u32);
 
 impl Default for FontSize {
     fn default() -> Self {
-        FontSize(26)
+        FontSize(20)
     }
 }
 
