@@ -14,7 +14,7 @@ use leptos_use::{
 };
 use serde::{Deserialize, Serialize};
 use web_sys::{
-    Element, HtmlElement, KeyboardEvent, MutationObserver, MutationObserverInit, Node,
+    Element, HtmlElement, MutationObserver, MutationObserverInit, Node,
     js_sys::Array,
     wasm_bindgen::{JsCast as _, closure::Closure},
 };
@@ -140,40 +140,25 @@ fn App() -> impl IntoView {
 
     // Undo key
     let (any_focused, set_any_focused) = signal(false);
-    _ = use_event_listener(document(), ev::keydown, move |ev| {
-        if ev.code() == "KeyZ"
-            && ev.ctrl_key()
-            && !ev.shift_key()
-            && !ev.alt_key()
-            && !any_focused()
-        {
-            undo();
-        }
-    });
-    // redo key
-    _ = use_event_listener(document(), ev::keydown, move |ev| {
-        if ev.code() == "KeyY"
-            && ev.ctrl_key()
-            && !ev.shift_key()
-            && !ev.alt_key()
-            && !any_focused()
-        {
-            redo();
-        }
-    });
-    // Unfocus on esc
     let active_element = use_active_element();
     _ = use_event_listener(document(), ev::keydown, move |ev| {
-        let ev = ev.unchecked_ref::<KeyboardEvent>();
-        if ev.code() != "Escape" {
-            return;
+        match ev.code().as_str() {
+            "KeyZ" if ev.ctrl_key() && !ev.shift_key() && !ev.alt_key() && !any_focused() => {
+                undo();
+            }
+            "KeyY" if ev.ctrl_key() && !ev.shift_key() && !ev.alt_key() && !any_focused() => {
+                redo();
+            }
+            "Escape" => {
+                if let Some(html_el) = active_element
+                    .get()
+                    .and_then(|el| el.dyn_into::<HtmlElement>().ok())
+                {
+                    _ = html_el.blur();
+                };
+            }
+            _ => {}
         }
-        if let Some(html_el) = active_element
-            .get()
-            .and_then(|el| el.dyn_into::<HtmlElement>().ok())
-        {
-            _ = html_el.blur();
-        };
     });
 
     view! {
