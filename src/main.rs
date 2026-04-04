@@ -57,9 +57,8 @@ fn App() -> impl IntoView {
             });
         }
     };
-    let UseClipboardReturn { copied, copy, .. } = use_clipboard_with_options(
-        UseClipboardOptions::default().copied_reset_delay(500.0),
-    );
+    let UseClipboardReturn { copied, copy, .. } =
+        use_clipboard_with_options(UseClipboardOptions::default().copied_reset_delay(500.0));
 
     setup_mutation_observer(add_entry, copied);
 
@@ -169,7 +168,10 @@ fn App() -> impl IntoView {
         if ev.code() != "Escape" {
             return;
         }
-        if let Some(html_el) = active_element().and_then(|el| el.dyn_into::<HtmlElement>().ok()) {
+        if let Some(html_el) = active_element
+            .get()
+            .and_then(|el| el.dyn_into::<HtmlElement>().ok())
+        {
             _ = html_el.blur();
         };
     });
