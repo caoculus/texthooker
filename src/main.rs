@@ -161,6 +161,18 @@ fn App() -> impl IntoView {
         }
     });
 
+    // Allow pasting to directly create a new entry
+    _ = use_event_listener(document(), ev::paste, move |ev| {
+        if !any_focused()
+            && !copied()
+            && let Some(data) = ev.clipboard_data()
+            && let Ok(text) = data.get_data("text")
+            && !text.is_empty()
+        {
+            add_entry(text);
+        }
+    });
+
     view! {
         <Html attr:style=move || format!("font-size: {}px", font_size().0) />
         <div id="container">
