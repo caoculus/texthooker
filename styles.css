@@ -29,7 +29,6 @@ body {
 .line_text {
   white-space: pre;
   text-wrap: wrap;
-  max-width: fit-content;
 }
 
 .line_text:empty::before {
