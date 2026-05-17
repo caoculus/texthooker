@@ -1,4 +1,8 @@
 /* Mostly stolen from https://learnjapanese.moe/texthooker.html */
+:root {
+  color-scheme: dark
+}
+
 body {
   background-color: #202020;
   color: #bdbdbd;
